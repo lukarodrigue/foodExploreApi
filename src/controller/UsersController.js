@@ -11,11 +11,11 @@ class UsersController {
         if (checkUserExist) {
             throw new AppError("Este email já está em uso.")
         }
-        const hashedPassword = await hash(8, password);
+        const hashedPassword = await hash(password, 8);
 
         await database.run(
-            "INSERT INTO users (name. email, password, is_admin) VALUES (?,?,?,?)",
-            [name, email, password, is_admin]
+            "INSERT INTO users (name, email, password, is_admin) VALUES (?,?,?,?)",
+            [name, email, hashedPassword, is_admin]
         );
         return response.status(201).json();
     }
@@ -32,7 +32,7 @@ class UsersController {
         }
 
         const userWithUpdatedEmail = await database.get(
-            "SELECT * users WHERE email = (?)",
+            "SELECT * FROM users  WHERE email = (?)",
             [email]
         );
 
