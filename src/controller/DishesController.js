@@ -3,31 +3,31 @@ const knex = require("knex");
 class DishesController {
     async create(request, response) {
         const { name, description, category, price, image, ingredients } = request.body;
-
         const { user_id } = request.params;
+    
+        const dish_id = await knex("dishes")
+            .insert({
+                name,
+                description,
+                category,
+                price,
+                image,
+                created_by: user_id,
+                updated_by: user_id,
+            });
 
-        const dish_id = await knex("dishes").insert({
-            name,
-            description,
-            category,
-            price,
-            image,
-            created_by: user_id,
-            updated_by: user_id,
-        });
+        console.log("INSERINDO DADOS NO DB", dish_id);
 
         const ingredientsInsert = ingredients.map((name) => {
             return {
                 dish_id,
                 name,
                 created_by: user_id,
-            }
+            };
         });
 
-
         await knex("ingredients").insert(ingredientsInsert);
-
-        response.json();
+        return response.json()
     }
 
     async show(request, response) {
@@ -89,6 +89,46 @@ class DishesController {
         return response.json();
     }
 
+    async index(request, response) {
+        const { title, ingredients } = request.query;
+
+        let dishes;
+
+        if (ingredients) {
+            const filterIngredients = ingredients.split(",").map((ingredient) => ingredient.trim());
+
+            dishes = await knex("ingredients")
+                .select([
+                    "dishes.id",
+                    "dishes.name",
+                    "dishes.description",
+                    "dishes.category",
+                    "dishes.price",
+                    "dishes.image",
+                ])
+                .whereLike("dishes.name", `%${title}%`)
+                .whereIn("ingredients.name", filterIngredients)
+                .innerJoin("dishes", "dishes.id", "ingredients.dish_id")
+                .orderBy("dishes.name");
+        } else {
+            dishes = await knex("dishes")
+                .whereLike("name", `%${title}%`)
+                .orderBy("name");
+        }
+
+        const dishesIngredients = await knex("ingredients");
+        const dishesWithIngredients = dishes.map((dish) => {
+            const dishIngredients = dishesIngredients.filter((ingredient) => ingredient.dish_id === dish.id);
+
+            return {
+                ...dish,
+                ingredients: dishIngredients,
+            };
+        });
+
+        return response.json(dishesWithIngredients);
+    }
 }
+
 
 module.exports = DishesController
