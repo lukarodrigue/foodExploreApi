@@ -1,12 +1,11 @@
-const knex = require("knex");
-const AppError = require("../utils/AppError");
+const knex = require("../database/knex");
 const DiskStorage = require("../providers/DiskStorage");
+const AppError = require("../utils/AppError");
 
 class DishesController {
   async create(request, response) {
-    const { name, description, category, price, image, ingredients } =
-      request.body;
-    const user_id = request.user;
+    const { name, description, category, price, image, ingredients } = request.body;
+    const user_id = request.user.id;
 
     const dish_id = await knex("dishes").insert({
       name,
@@ -16,7 +15,7 @@ class DishesController {
       image,
       created_by: user_id,
       updated_by: user_id,
-    })
+    });
 
     const ingredientsInsert = ingredients.map((name) => {
       return {
@@ -35,7 +34,6 @@ class DishesController {
     const { id } = request.params;
 
     const dish = await knex("dishes").where({ id }).first();
-
     const ingredients = await knex("ingredients")
       .where({ dish_id: id })
       .orderBy("name");
@@ -57,13 +55,12 @@ class DishesController {
   async update(request, response) {
     const { id } = request.params;
     const { name, description, category, price, ingredients } = request.body;
-
-    const imageFilename = request.file?.fileName;
+    const imageFilename = request.file?.filename;
 
     const dish = await knex("dishes").where({ id }).first();
 
     if (!dish) {
-      throw new AppError("Prato não encontrado", 404);
+      throw new AppError("Prato não encontrado.", 404);
     }
 
     const dishUpdate = {
@@ -71,6 +68,8 @@ class DishesController {
       description: description ?? dish.description,
       category: category ?? dish.category,
       price: price ?? dish.price,
+      updated_by: request.user.id,
+      updated_at: knex.fn.now(),
     };
 
     if (imageFilename) {
@@ -85,20 +84,18 @@ class DishesController {
     }
 
     if (ingredients) {
-      await knex("ingredients".where({ dish_id: id })).delete();
+      await knex("ingredients").where({ dish_id: id }).delete();
+
+      const ingredientsInsert = ingredients.map((name) => {
+        return {
+          dish_id: id,
+          name,
+          created_by: dish.created_by,
+        };
+      });
+
+      await knex("ingredients").insert(ingredientsInsert);
     }
-
-    const ingredientsInsert = ingredients.map((name) => {
-      return {
-        dish_id: id,
-        name,
-        created_by: dish.created_by,
-      };
-    });
-
-    await knex("ingredients").insert(ingredientsInsert);
-
-    dishUpdate.updated_by = dish.created_by;
 
     await knex("dishes").where({ id }).update(dishUpdate);
 
@@ -111,9 +108,7 @@ class DishesController {
     let dishes;
 
     if (ingredients) {
-      const filterIngredients = ingredients
-        .split(",")
-        .map((ingredient) => ingredient.trim());
+      const filterIngredients = ingredients.split(",").map((ingredient) => ingredient.trim());
 
       dishes = await knex("ingredients")
         .select([
@@ -136,9 +131,7 @@ class DishesController {
 
     const dishesIngredients = await knex("ingredients");
     const dishesWithIngredients = dishes.map((dish) => {
-      const dishIngredients = dishesIngredients.filter(
-        (ingredient) => ingredient.dish_id === dish.id
-      );
+      const dishIngredients = dishesIngredients.filter((ingredient) => ingredient.dish_id === dish.id);
 
       return {
         ...dish,

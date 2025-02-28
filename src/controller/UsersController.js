@@ -21,9 +21,9 @@ class UsersController {
     }
 
     async update(request, response) {
-        const { name, email, password, old_password } = request.body;
+        const { name, email, password, old_password, is_admin } = request.body;
         const user_id = request.user_id;
-        
+
         const database = await sqliteConnection();
 
         const user = await database.get("SELECT * FROM users WHERE id = ?", [user_id]);
@@ -53,15 +53,27 @@ class UsersController {
 
             user.password = await hash(password, 8);
         }
+
+        if (is_admin !== undefined && user.id !== request.userId && !user.is_admin) {
+            throw new AppError(
+                "Você não tem permissão para atualizar o campo 'is_admin'.", 403
+            );
+        }
+
+        if (is_admin !== undefined && user.is_admin) {
+            user.is_admin = is_admin;
+        }
+
         await database.run(
             `
             UPDATE users SET
             name = ?,
             email = ?,
             password = ?,
+            is_admin = ?,
             updated_at = DATETIME('now')
             WHERE id = ?`,
-            [user.name, user.email, user.password, user_id]
+            [user.name, user.email, user.password, user.is_admin, user_id]
         );
 
         return response.status(200).json();
