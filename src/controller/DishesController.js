@@ -16,7 +16,6 @@ class DishesController {
       created_by: user_id,
       updated_by: user_id,
     });
-
     const ingredientsInsert = ingredients.map((name) => {
       return {
         dish_id,
