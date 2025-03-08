@@ -3,7 +3,7 @@ const { Router } = require("express");
 const multer = require("multer");
 const uploadConfig = require("../config/upload");
 
-const DishesController = require("../controller/DishesController");
+const DishesController = require("../controllers/DishesController");
 const ensureAuthenticated = require("../middlewares/ensureAuthenticated")
 const checkAdminPermission = require("../middlewares/checkAdminPermission");
 
