@@ -8,6 +8,11 @@ class DishesController {
     const image = request.file.filename;
     const user_id = request.user.id;
 
+    const diskStorage = new DiskStorage();
+    const filename = await diskStorage.saveFile(image);
+
+    const ingredientsArray = JSON.parse(ingredients || '[]');
+
     const [dish_id] = await knex("dishes").insert({
       name,
       description,
@@ -17,6 +22,7 @@ class DishesController {
       created_by: user_id,
       updated_by: user_id,
     });
+
     const ingredientsInsert = ingredientsArray.map((name) => {
       return {
         dish_id,
@@ -135,15 +141,15 @@ class DishesController {
         .orderBy("dishes.name");
     } else {
       dishes = await knex("dishes")
-        .select([
-          "dishes.id",
-          "dishes.name",
-          "dishes.description",
-          "dishes.category",
-          "dishes.price",
-          "dishes.image",
-        ])
-        .orderBy("dishes.name");
+      .select([
+        "dishes.id",
+        "dishes.name",
+        "dishes.description",
+        "dishes.category",
+        "dishes.price",
+        "dishes.image",
+      ])
+      .orderBy("dishes.name");
     }
 
     const dishesIngredients = await knex("ingredients");
