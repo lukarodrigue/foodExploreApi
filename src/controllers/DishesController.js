@@ -141,15 +141,15 @@ class DishesController {
         .orderBy("dishes.name");
     } else {
       dishes = await knex("dishes")
-      .select([
-        "dishes.id",
-        "dishes.name",
-        "dishes.description",
-        "dishes.category",
-        "dishes.price",
-        "dishes.image",
-      ])
-      .orderBy("dishes.name");
+        .select([
+          "dishes.id",
+          "dishes.name",
+          "dishes.description",
+          "dishes.category",
+          "dishes.price",
+          "dishes.image",
+        ])
+        .orderBy("dishes.name");
     }
 
     const dishesIngredients = await knex("ingredients");
